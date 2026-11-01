@@ -518,7 +518,10 @@ void alloc_only_pool_clear(struct AllocOnlyPool *pool) {
 
 void *alloc_only_pool_alloc(struct AllocOnlyPool *pool, s32 size) {
     u8 *addr;
-    u32 s = size;
+    /* Align every alloc to 4: ARMv7 VFP stores (and any LDRD/float ops) fault
+       with SIGBUS on misaligned pointers, and sizeof() of some structs is only
+       2-mod-4 depending on toolchain, so this can't rely on callers. */
+    u32 s = ((u32) size + 3u) & ~3u;
     if (pool->lastBlockSize - pool->lastBlockNextPos < s) {
         struct AllocOnlyPoolBlock *block;
         u32 nextSize = pool->lastBlockSize * 2;
